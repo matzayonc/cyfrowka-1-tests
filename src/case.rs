@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::state::State;
 
 #[derive(Debug, Clone)]
@@ -9,68 +11,87 @@ pub struct Case {
     pub before: State,
 }
 
-impl Iterator for Case {
+pub struct Cases {
+    pub case: Case,
+}
+
+impl Iterator for Cases {
     type Item = Case;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if !self.on {
-            return Some(Case { on: true, ..*self });
+    fn next(self: &mut Cases) -> Option<Self::Item> {
+        let c = &mut self.case;
+
+        if !c.on {
+            c.on = true;
+            return Some(c.clone());
         } else {
-            self.on = false;
+            c.on = false;
         }
 
-        if !self.off {
-            return Some(Case { off: true, ..*self });
+        if !c.off {
+            c.off = true;
+            return Some(c.clone());
         } else {
-            self.off = false;
+            c.off = false;
         }
 
-        if self.bits < 0xF {
-            return Some(Case {
-                bits: self.bits + 1,
-                ..*self
-            });
+        if c.bits < 0xF {
+            c.bits += 1;
+            return Some(c.clone());
         } else {
-            self.bits = 0;
+            c.bits = 0;
         }
 
-        if !self.before.armed {
-            return Some(Case {
-                before: State {
-                    armed: true,
-                    ..self.before
-                },
-                ..*self
-            });
+        if !c.before.armed {
+            c.before.armed = true;
+            return Some(c.clone());
         } else {
-            self.before.armed = false;
+            c.before.armed = false;
         }
 
-        if !self.before.errored {
-            return Some(Case {
-                before: State {
-                    errored: true,
-                    ..self.before
-                },
-                ..*self
-            });
+        if !c.before.errored {
+            c.before.errored = true;
+            return Some(c.clone());
         } else {
-            self.before.errored = false;
+            c.before.errored = false;
         }
 
-        if !self.before.alarm {
-            return Some(Case {
-                before: State {
-                    alarm: true,
-                    ..self.before
-                },
-                ..*self
-            });
+        if !c.before.alarm {
+            c.before.alarm = true;
+            return Some(c.clone());
         } else {
-            self.before.alarm = false;
+            c.before.alarm = false;
         }
 
         None
+    }
+}
+
+impl Display for Case {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut str = String::new();
+
+        for i in 0..4 {
+            if self.bits & (1 << i) != 0 {
+                str.push('1');
+            } else {
+                str.push('0');
+            }
+        }
+
+        if self.off {
+            str.push('1');
+        } else {
+            str.push('0');
+        }
+
+        if self.on {
+            str.push('1');
+        } else {
+            str.push('0');
+        }
+
+        write!(f, "{}", str)
     }
 }
 
@@ -88,45 +109,14 @@ impl Case {
         }
     }
 
-    pub fn reset() -> String {
-        String::from("00000010\n")
-    }
-
-    pub fn load(str: String) -> Case {
-        let mut case = Case::new();
-
-        let mut digits = str.chars();
-
-        for i in 0..4 {
-            let bit = digits.next().unwrap();
-            if bit == '1' {
-                case.bits |= 1 << i;
-            }
-        }
-
-        case.off = digits.next().unwrap() == '1';
-        case.on = digits.next().unwrap() == '1';
-
-        if case.next().is_some() {
-            panic!("too many digits");
-        }
-
-        case
+    pub fn iter() -> Cases {
+        Cases { case: Case::new() }
     }
 }
 
 #[test]
 fn test_case() {
-    let mut case = Case::new();
-
-    for i in 0..=F {
-        let this_case = Case::load().unwrap();
-        case = this_case;
-
-        let case_string = case.data();
-
-        println!("{}", case_string);
+    for case in Case::iter() {
+        println!("{}\n", case);
     }
-
-    println!()
 }
