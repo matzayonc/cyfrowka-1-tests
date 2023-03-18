@@ -21,7 +21,7 @@ impl Iterator for Cases {
     fn next(self: &mut Cases) -> Option<Self::Item> {
         let c = &mut self.case;
 
-        if !c.on {
+        if !c.on && !c.off {
             c.on = true;
             return Some(c.clone());
         } else {
@@ -35,35 +35,46 @@ impl Iterator for Cases {
             c.off = false;
         }
 
-        if c.bits < 0xF {
+        if c.bits <= 0xF {
             c.bits += 1;
             return Some(c.clone());
         } else {
             c.bits = 0;
         }
 
-        if !c.before.armed {
-            c.before.armed = true;
-            return Some(c.clone());
-        } else {
-            c.before.armed = false;
-        }
+        match c.before {
+            State {
+                armed: false,
+                errored: false,
+                alarm: false,
+            } => {
+                c.before.armed = true;
+                return Some(c.clone());
+            }
+            State {
+                armed: true,
+                errored: false,
+                alarm: false,
+            } => {
+                c.before.armed = false;
+                c.before.errored = true;
+                return Some(c.clone());
+            }
+            State {
+                armed: false,
+                errored: true,
+                alarm: false,
+            } => {
+                c.before = State {
+                    armed: true,
+                    errored: false,
+                    alarm: true,
+                };
+                return Some(c.clone());
+            }
 
-        if !c.before.errored {
-            c.before.errored = true;
-            return Some(c.clone());
-        } else {
-            c.before.errored = false;
+            _ => return None,
         }
-
-        if !c.before.alarm {
-            c.before.alarm = true;
-            return Some(c.clone());
-        } else {
-            c.before.alarm = false;
-        }
-
-        None
     }
 }
 
@@ -118,5 +129,21 @@ impl Case {
 fn test_case() {
     for case in Case::iter() {
         println!("{}\n", case);
+    }
+}
+
+#[test]
+fn test_conflict() {
+    println!("test start");
+    for case in Case::iter() {
+        assert!(!(case.on && case.off));
+        assert!(!(case.before.alarm && case.before.errored));
+
+        if case.before.alarm {
+            assert!(case.before.armed);
+        }
+        if case.before.errored {
+            assert!(!case.before.armed);
+        }
     }
 }

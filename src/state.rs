@@ -17,7 +17,7 @@ impl Display for State {
         str.push(if self.errored { '1' } else { '0' });
         str.push(if self.alarm { '1' } else { '0' });
 
-        write!(f, "{}", str);
+        write!(f, "{}", str)?;
 
         write!(
             f,
