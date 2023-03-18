@@ -12,9 +12,22 @@ fn main() {
     file.write("Data:\n".as_bytes()).unwrap();
 
     for case in Case::iter() {
+        println!("{}\n", case);
         let expected = State::predict(&case);
 
-        let string = format!("{}{}{}", "0".repeat(7), case, expected);
+        let mut flow = Vec::<Case>::new();
+        flow.append(&mut case.before.prepare());
+        flow.push(case);
+        flow.append(&mut expected.clean());
+        flow.push(Case::new()); // padding
+
+        for step in flow {
+            println!("STEP {}\n", step);
+            let after = State::predict(&step);
+
+            let case_string = format!("{}{}{}\n", "0".repeat(7), step, after);
+            file.write(case_string.as_bytes()).unwrap();
+        }
     }
 
     file.flush().unwrap();

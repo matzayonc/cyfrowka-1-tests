@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::case::Case;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct State {
     pub armed: bool,
     pub errored: bool,
@@ -17,13 +17,7 @@ impl Display for State {
         str.push(if self.errored { '1' } else { '0' });
         str.push(if self.alarm { '1' } else { '0' });
 
-        write!(f, "{}", str)?;
-
-        write!(
-            f,
-            "State {{ armed: {}, errored: {}, alarm: {} }}",
-            self.armed, self.errored, self.alarm
-        )
+        write!(f, "{}", str)
     }
 }
 
@@ -45,4 +39,69 @@ impl State {
             alarm: (triggered && was_armed) || (was_alarm && !case.off),
         }
     }
+
+    pub fn prepare(&self) -> Vec<Case> {
+        let mut v = vec![];
+        if self.errored {
+            v.push(Case {
+                bits: 0xF,
+                on: true,
+                ..Case::new()
+            });
+        } else if self.armed {
+            v.push(Case {
+                on: true,
+                ..Case::new()
+            });
+        }
+        if self.alarm {
+            v.push(Case {
+                bits: 0xF,
+                ..Case::new()
+            });
+        }
+
+        v
+    }
+
+    pub fn clean(&self) -> Vec<Case> {
+        let mut v = vec![];
+        if self.armed || self.alarm {
+            v.push(Case {
+                bits: 0,
+                off: true,
+                ..Case::new()
+            });
+        }
+        if self.errored {
+            v.push(Case {
+                on: true,
+                ..Case::new()
+            });
+            v.push(Case {
+                bits: 0,
+                off: true,
+                ..Case::new()
+            });
+        }
+
+        v
+    }
+}
+
+#[test]
+fn test() {
+    let state = State {
+        armed: false,
+        errored: true,
+        alarm: false,
+    };
+    assert_eq!(
+        State::prepare(&state)[0],
+        Case {
+            bits: 0xF,
+            on: true,
+            ..Case::new()
+        }
+    );
 }

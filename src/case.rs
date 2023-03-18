@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::state::State;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Case {
     pub on: bool,
     pub off: bool,
