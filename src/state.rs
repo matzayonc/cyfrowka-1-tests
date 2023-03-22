@@ -35,7 +35,7 @@ impl State {
 
         State {
             armed,
-            errored: (was_errored && !armed) || (case.on && triggered),
+            errored: (was_errored && !armed) || (case.on && triggered && !armed),
             alarm: (triggered && was_armed) || (was_alarm && !case.off),
         }
     }
@@ -86,6 +86,20 @@ impl State {
         }
 
         v
+    }
+
+    pub fn num(&self) -> u8 {
+        let mut num = 0;
+        if self.armed {
+            num += 1;
+        }
+        if self.errored {
+            num += 2;
+        }
+        if self.alarm {
+            num += 4;
+        }
+        num
     }
 }
 

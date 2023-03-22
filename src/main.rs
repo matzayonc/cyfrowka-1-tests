@@ -15,18 +15,34 @@ fn main() {
         println!("{}\n", case);
         let expected = State::predict(&case);
 
+        let mut simple = Vec::<Case>::new();
+        simple.push(Case::new());
+        simple.append(&mut case.before.prepare());
+        simple.push(case);
+        simple.append(&mut expected.clean());
+        simple.push(Case::new()); // padding
+
         let mut flow = Vec::<Case>::new();
-        flow.append(&mut case.before.prepare());
-        flow.push(case);
-        flow.append(&mut expected.clean());
-        flow.push(Case::new()); // padding
+
+        let mut previous = Case::new();
+
+        for i in simple {
+            flow.append(&mut i.between(&previous));
+            flow.push(i.clone());
+            flow.push(i.clone());
+            flow.push(i.clone());
+            flow.push(i.clone());
+            flow.push(i.clone());
+            previous = i.clone();
+        }
 
         for step in flow {
             println!("STEP {}\n", step);
             let after = State::predict(&step);
 
-            let case_string = format!("{}{}{}\n", "0".repeat(7), step, after);
-            file.write(case_string.as_bytes()).unwrap();
+            // let case_string = format!("{}{}{}\n", "0".repeat(7), step, after);
+            let case_string = format!("{:#x}\n", (step.num() as u16) * 8 + (after.num() as u16));
+            file.write(case_string[2..].as_bytes()).unwrap();
         }
     }
 

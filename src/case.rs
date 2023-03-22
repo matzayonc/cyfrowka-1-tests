@@ -123,6 +123,59 @@ impl Case {
     pub fn iter() -> Cases {
         Cases { case: Case::new() }
     }
+
+    pub fn between(&self, previous: &Self) -> Vec<Case> {
+        let mut cases = Vec::new();
+
+        let mut previous = previous.clone();
+
+        if self.bits != previous.bits {
+            previous = Case {
+                on: self.on,
+                off: self.off,
+                bits: self.bits,
+                before: State::predict(&previous),
+            };
+            cases.push(previous.clone());
+        }
+
+        if self.on != previous.on {
+            previous = Case {
+                on: self.on,
+                before: State::predict(&previous),
+                ..previous.clone()
+            };
+            cases.push(previous.clone());
+        }
+
+        if self.off != previous.off {
+            previous = Case {
+                on: self.on,
+                off: self.off,
+                before: State::predict(&previous),
+                ..previous.clone()
+            };
+            cases.push(previous.clone());
+        }
+
+        cases
+    }
+
+    pub fn num(&self) -> u8 {
+        let mut num = 0;
+
+        if self.on {
+            num += 1;
+        }
+
+        if self.off {
+            num += 2;
+        }
+
+        num += self.bits * 4;
+
+        num
+    }
 }
 
 #[test]
